@@ -30,7 +30,14 @@ while True:
     if command == 'LIST':
         # Send list of files in current directory to client
         file_list = '\n'.join(os.listdir())
-        client_socket.sendall(file_list.encode('utf-8'))
+        # Send file list to client in chunks
+        for i in range(0, len(file_list), 1024):
+            data = file_list[i:i+1024]
+            client_socket.sendall(data.encode('utf-8'))
+
+        # Send empty string to signal end of file list
+        client_socket.sendall(''.encode('utf-8'))    
+        
     elif command.startswith('GET'):
         # Extract filename from command
         filename = command.split()[1]
@@ -38,14 +45,34 @@ while True:
         try:
             # Open file and send contents to client
             with open(filename, 'rb') as f:
-                file_contents = f.read()
-                client_socket.sendall(file_contents)
+                while True:
+                    # Read file contents in chunks
+                    chunk = f.read(1024)
+
+                    if not chunk:
+                        # End of file
+                        break
+                    client_socket.sendall(chunk)
+
         except FileNotFoundError:
             # Send error message if file does not exist
             error_msg = f'File {filename} not found'
-            client_socket.sendall(error_msg.encode('utf-8'))
-    elif command == 'quit':
-        client_socket.close()
+
+            # Send error message to client in chunks
+            for i in range(0, len(error_msg), 1024):
+                chunk = error_msg[i:i+1024]
+            client_socket.sendall(chunk.encode('utf-8'))
+              
+
+            # Send empty string to signal end of error message
+            client_socket.sendall(''.encode('utf-8'))
+
+    else:
+        # Invalid command
+        error_msg = f'Invalid command: {command}'
+        for i in range(0, len(error_msg), 1024):
+                chunk = error_msg[i:i+1024]
+        client_socket.sendall(chunk.encode('utf-8'))
 
     # Close client socket
     client_socket.close()

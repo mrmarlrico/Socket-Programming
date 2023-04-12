@@ -19,10 +19,16 @@ while True:
     client_socket.sendall(command.encode('utf-8'))
 
     # Receive response from server
-    response = client_socket.recv(1024).decode('utf-8')
+    response = b''
+    while True:
+        data = client_socket.recv(1024)
+        if not data:
+            break
+        response += data
 
-    # Print response to console
-    print(response)
+    # Decode response and print to console
+    response_str = response.decode('utf-8')
+    print(response_str)
 
 # Close client socket
 client_socket.close()
