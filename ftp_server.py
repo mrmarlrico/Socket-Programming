@@ -67,6 +67,34 @@ while True:
             # Send empty string to signal end of error message
             client_socket.sendall(''.encode('utf-8'))
 
+    elif command.startswith('PUT'):
+        # Extract filename from command
+        filename = command.split()[1]
+
+        try:
+            # Open file and write contents to server
+            with open(filename, 'wb') as f:
+                while True:
+                    # Receive file contents in chunks
+                    chunk = client_socket.recv(1024)
+
+                    if not chunk:
+                        # End of file
+                        break
+                    f.write(chunk)
+
+            success_msg = f'File {filename} uploaded successfully'
+            client_socket.sendall(success_msg.encode('utf-8'))
+
+        except Exception as e:
+            error_msg = f'Error uploading file {filename}: {str(e)}'
+            client_socket.sendall(error_msg.encode('utf-8'))
+
+    elif command == 'QUIT':
+        # Close client socket and break out of loop
+        client_socket.close()
+        break
+
     else:
         # Invalid command
         error_msg = f'Invalid command: {command}'
