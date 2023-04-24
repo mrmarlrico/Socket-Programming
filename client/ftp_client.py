@@ -1,3 +1,8 @@
+# ==============================================
+# This file is ran second in another terminal
+# 'python3 ftp_client.py' 
+# ==============================================
+
 import socket
 import os
 
@@ -5,37 +10,48 @@ import os
 HOST = '127.0.0.1'
 PORT = 5000
 
+COMMANDS = ['ls', 'get', 'put']
+
+# Create data socket for transferring data files
 def create_data_socket():
     data_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     data_socket.bind((HOST, 0))
     data_socket.listen(1)
     return data_socket
 
-# Create client socket and connect to server
-control_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-control_socket.connect((HOST, PORT))
+# Create client socket for commands and connect to server
+client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+client_socket.connect((HOST, PORT))
 
 while True:
     # Send command to server
     command = input('> ')
     cmd_parts = command.split()
-    if cmd_parts[0] in ['ls', 'get', 'put']:
+
+    # If command is ls, get, put it creates a data socket
+    if cmd_parts[0] in COMMANDS:
         data_socket = create_data_socket()
         data_port = data_socket.getsockname()[1]
         cmd_parts.insert(1, str(data_port))
         command = ' '.join(cmd_parts)
 
-    control_socket.sendall(command.encode('utf-8'))
+    # Send command to server
+    client_socket.sendall(command.encode('utf-8'))
 
+    # If quit then break out of the loop then disconnect connection
     if cmd_parts[0] == 'quit':
         print("Successfully disconnected.")
         break
-    elif cmd_parts[0] not in ['ls', 'get', 'put']:
-        response = control_socket.recv(1024).decode('utf-8')
+
+    # If not in command list then error message 
+    elif cmd_parts[0] not in COMMANDS:
+        response = client_socket.recv(1024).decode('utf-8')
         print(response)
+
+    # If get then grab file from the server
     elif cmd_parts[0] == 'get':
         # Receive server response for file transfer status
-        response = control_socket.recv(1024).decode('utf-8').strip()
+        response = client_socket.recv(1024).decode('utf-8').strip()
 
         if response.startswith('File not found'):
             print(response)
@@ -70,10 +86,11 @@ while True:
             response_str = response.decode('utf-8')
             print(response_str)
 
+        # If put then client stores file into the server
         elif cmd_parts[0] == 'put':
             filename = cmd_parts[2]
             if os.path.exists(filename):
-                control_socket.sendall("file exists".encode('utf-8'))
+                client_socket.sendall("file exists".encode('utf-8'))
                 with open(filename, 'rb') as f:
                     while True:
                         chunk = f.read(1024)
@@ -83,13 +100,17 @@ while True:
                 server_data_socket.close()
 
                 # Receive server response for file transfer status
-                response = control_socket.recv(1024).decode('utf-8').strip()
+                response = client_socket.recv(1024).decode('utf-8').strip()
                 print(response)
+
             else:
-                control_socket.sendall("file not found".encode('utf-8'))
-                print(f"File {filename} not found.")
+                client_socket.sendall("file not found".encode('utf-8'))
+                # Receive server response for file transfer status
+                response = client_socket.recv(1024).decode('utf-8').strip()
+                print(response)
+
                 server_data_socket.close()
 
 
-# Close control socket
-control_socket.close()
+# Close client socket
+client_socket.close()
