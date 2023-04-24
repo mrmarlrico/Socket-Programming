@@ -1,8 +1,3 @@
-# ============================================================
-# This file is ran first in one terminal
-# 'python3 ftp_server.py' 
-# ============================================================
-
 import socket
 import os
 
@@ -19,88 +14,75 @@ print(f'Server listening on {HOST}:{PORT}')
 
 while True:
     # Accept incoming client connection
-    client_socket, client_address = server_socket.accept()
+    control_socket, client_address = server_socket.accept()
 
     print(f'Accepted connection from {client_address}')
 
-    # Read client command
-    command = client_socket.recv(1024).decode('utf-8').strip()
+    while True:
+        # Read client command
+        command = control_socket.recv(1024).decode('utf-8').strip()
+        cmd_parts = command.split()
 
-    # Handle command
-    if command == 'LIST':
-        # Send list of files in current directory to client
-        file_list = '\n'.join(os.listdir())
-        # Send file list to client in chunks
-        for i in range(0, len(file_list), 1024):
-            data = file_list[i:i+1024]
-            client_socket.sendall(data.encode('utf-8'))
+        # Handle command
+        if cmd_parts[0] == 'ls' or cmd_parts[0] == 'get' or cmd_parts[0] == 'put':
+            data_port = int(cmd_parts[1])
+            data_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            data_socket.connect(('127.0.0.1', data_port))
 
-        # Send empty string to signal end of file list
-        client_socket.sendall(''.encode('utf-8'))    
-        
-    elif command.startswith('GET'):
-        # Extract filename from command
-        filename = command.split()[1]
+            if cmd_parts[0] == 'ls':
+                file_list = '\n'.join(os.listdir())
+                for i in range(0, len(file_list), 1024):
+                    data = file_list[i:i + 1024]
+                    data_socket.sendall(data.encode('utf-8'))
+                data_socket.sendall(''.encode('utf-8'))
 
-        try:
-            # Open file and send contents to client
-            with open(filename, 'rb') as f:
-                while True:
-                    # Read file contents in chunks
-                    chunk = f.read(1024)
+            elif cmd_parts[0] == 'get':
+                filename = cmd_parts[2]
+                if os.path.isfile(filename):
+                    success_msg = f'File {filename} found'
+                    control_socket.sendall(success_msg.encode('utf-8'))
 
-                    if not chunk:
-                        # End of file
-                        break
-                    client_socket.sendall(chunk)
+                    with open(filename, 'rb') as f:
+                        while True:
+                            chunk = f.read(1024)
+                            if not chunk:
+                                break
+                            data_socket.sendall(chunk)
+                    data_socket.sendall(''.encode('utf-8'))
+                else:
+                    error_msg = f'File not found: {filename}'
+                    control_socket.sendall(error_msg.encode('utf-8'))
 
-        except FileNotFoundError:
-            # Send error message if file does not exist
-            error_msg = f'File {filename} not found'
+            elif cmd_parts[0] == 'put':
+                filename = cmd_parts[2]
+                file_status = control_socket.recv(1024).decode('utf-8').strip()
+                if file_status == "file exists":
+                    with open(filename, 'wb') as f:
+                        while True:
+                            chunk = data_socket.recv(1024)
+                            if not chunk:
+                                break
+                            f.write(chunk)
+                    success_msg = f'File {filename} uploaded successfully'
+                    control_socket.sendall(success_msg.encode('utf-8'))
+                else:
+                    error_msg = f"File {filename} not found."
+                    control_socket.sendall(error_msg.encode('utf-8'))
 
-            # Send error message to client in chunks
+            data_socket.close()
+
+        elif cmd_parts[0] == 'quit':
+            print(f'Close connection from {client_address}')
+            print(f'Server listening on {HOST}:{PORT}')
+            control_socket.close()
+            break
+
+        else:
+            error_msg = f'Invalid command: {command}'
             for i in range(0, len(error_msg), 1024):
                 chunk = error_msg[i:i+1024]
-            client_socket.sendall(chunk.encode('utf-8'))
-              
+            control_socket.sendall(chunk.encode('utf-8'))
 
-            # Send empty string to signal end of error message
-            client_socket.sendall(''.encode('utf-8'))
+    control_socket.close()
 
-    elif command.startswith('PUT'):
-        # Extract filename from command
-        filename = command.split()[1]
-
-        try:
-            # Open file and write contents to server
-            with open(filename, 'wb') as f:
-                while True:
-                    # Receive file contents in chunks
-                    chunk = client_socket.recv(1024)
-
-                    if not chunk:
-                        # End of file
-                        break
-                    f.write(chunk)
-
-            success_msg = f'File {filename} uploaded successfully'
-            client_socket.sendall(success_msg.encode('utf-8'))
-
-        except Exception as e:
-            error_msg = f'Error uploading file {filename}: {str(e)}'
-            client_socket.sendall(error_msg.encode('utf-8'))
-
-    elif command == 'QUIT':
-        # Close client socket and break out of loop
-        client_socket.close()
-        break
-
-    else:
-        # Invalid command
-        error_msg = f'Invalid command: {command}'
-        for i in range(0, len(error_msg), 1024):
-                chunk = error_msg[i:i+1024]
-        client_socket.sendall(chunk.encode('utf-8'))
-
-    # Close client socket
-    client_socket.close()
+server_socket.close()
