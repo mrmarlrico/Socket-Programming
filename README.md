@@ -11,9 +11,9 @@
 This is a simple FTP server/client program. The client connects to the server and it can use simple commands to interact with the server itself.
 
 ## How to use:
-You will need to update your python if any error pertaining to python emerge.
+**You will need to update your python if any error pertaining to python emerge.**
 
-On one terminal, execute "ftp_server.py" using this command: 
+> On one terminal, execute "ftp_server.py" using this command: 
 * "python ftp_server.py" or "python3 ftp_server.py"
 
 On another terminal, execute "ftp_client.py" using this command:
