@@ -22,5 +22,5 @@ This is a simple FTP server/client program. The client connects to the server an
 
 > Once connected, you can interact with the server on the client side using these commands: 
 * ls: this will list out all the files on the server
-* get <filename> : this will retrieve the specified file on the server
-* put <filename> : this will insert a file from the client side to the server
+* get [filename] : this will retrieve the specified file on the server
+* put [filename] : this will insert a file from the client side to the server
