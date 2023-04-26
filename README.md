@@ -13,11 +13,11 @@ This is a simple FTP server/client program. The client connects to the server an
 ## How to use:
 **You will need to update your python if any error pertaining to python emerge.**
 
-> On one terminal, execute ==ftp_server.py== using this command: 
-* "python ftp_server.py" or "python3 ftp_server.py"
+> On one terminal, execute `"ftp_server.py"` using this command: 
+* `"python ftp_server.py"` or `"python3 ftp_server.py"`
 
-> On another terminal, execute ==ftp_client.py== using this command:
-* "python ftp_client.py" or "python3 ftp_client.py"
+> On another terminal, execute `"ftp_client.py"` using this command:
+* `"python ftp_client.py"` or `"python3 ftp_client.py"`
 * Wait for a confirmation server side
 
 > Once connected, you can interact with the server on the client side using these commands: 
