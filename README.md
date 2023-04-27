@@ -5,7 +5,7 @@
 * Marl Rico: mrmarlrico@csu.fullerton.edu
 * Anahid Zandi Haghighi: anazandi@csu.fullerton.edu
 * Parth Sharma: parthsharma@csu.fullerton.edu
-* Tina Duong: 
+* Tina Duong: Linh_tina_duong@csu.fullerton.edu
 
 ## Project Description:
 This is a simple FTP server/client program. The client connects to the server and it can use simple commands to interact with the server itself.
